@@ -10,9 +10,15 @@
     "format": "biome format --write"
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.100",
+    "@vercel/sandbox": "^1.7.1",
+    "ai": "^6.0.98",
+    "dotenv": "^17.3.1",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "tsx": "^4.21.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.4",
