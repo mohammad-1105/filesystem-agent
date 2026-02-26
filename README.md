@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Filesystem Agent
 
-## Getting Started
+A Next.js app that runs a tool-using AI agent over call transcript files.
 
-First, run the development server:
+## What It Does
+
+- Renders a chat UI (`app/form.tsx`) using `@ai-sdk/react`.
+- Sends user prompts to `POST /api` (`app/api/route.ts`).
+- Streams model responses and tool activity back to the client.
+- Uses a sandboxed bash tool to inspect transcript files loaded from `lib/calls/`.
+
+## Architecture
+
+1. The client sends chat messages to `/api`.
+2. The API route extracts only the last user text message and passes it to the agent.
+3. `lib/agent.ts` creates a `ToolLoopAgent` with:
+   - model: `openai("gpt-5.2")`
+   - instructions focused on answering questions about customer calls
+   - tool: `bashTool`
+4. On startup, the app creates a Vercel sandbox and copies `lib/calls/*.md` into `calls/` inside the sandbox.
+5. `lib/tools.ts` defines `bashTool`, which executes shell commands in that sandbox and returns `stdout`, `stderr`, and `exitCode`.
+
+## Setup
+
+1. Install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Create environment variables:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Set `OPENAI_API_KEY` in `.env.local`.
 
-## Learn More
+4. Run the app:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Open `http://localhost:3000`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Scripts
 
-## Deploy on Vercel
+- `pnpm dev` - start dev server
+- `pnpm build` - production build
+- `pnpm start` - run production server
+- `pnpm lint` - run Biome checks
+- `pnpm format` - format with Biome
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project Layout
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `app/page.tsx` - entry page
+- `app/form.tsx` - chat UI and streamed tool output rendering
+- `app/api/route.ts` - API endpoint that invokes the agent
+- `lib/agent.ts` - sandbox setup + `ToolLoopAgent` configuration
+- `lib/tools.ts` - bash tool definition
+- `lib/calls/*.md` - source transcript files analyzed by the agent
+
+## Current Behavior Notes
+
+- The API currently passes only the last user message as prompt context.
+- The input form is only shown before the first message (`messages.length === 0`).
+- The input value is not cleared after submit (`setInput(input)` keeps the same text).
+
+## Example Prompts
+
+- `Summarize pricing concerns across all calls.`
+- `What changed between the first and second calls?`
+- `List all participants and their roles from call 3.`
